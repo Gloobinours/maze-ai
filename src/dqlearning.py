@@ -318,8 +318,8 @@ for i_episode in range(num_episodes):
         print(f'# Steps: {step_count}')
         print(f'# Epsilon: {agent.eps_threshold}          ')
         print(f'# Reward: {total_reward[0]}         ')
+        print(f'# Episode: {i_episode}'               )
         # input()
-    print(f'\n\nEpisode: {i_episode}, Total reward: {total_reward[0]}, Epsilon {agent.eps_threshold}, Steps: {step_count}')
 
 
 print('Complete')

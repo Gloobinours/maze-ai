@@ -25,6 +25,7 @@ class GameLoop:
         self.fog_size: int = fog_size
         self.visited_cells: list[Cell] = []
         self.last_visited_cell: Cell = Cell(0,0)
+        self.distance_from_coin = 0
     
     def draw_maze(self) -> None:
         """Draws the player on the maze
@@ -61,19 +62,19 @@ class GameLoop:
         # print("Action: ", action, ", ", Action(action).name)
         if (action == Action.UP) or (action == Action.UP.value):
             if not self.player.move_up():
-                self.reward -= 10
+                self.reward -= 20
                 return self.state, self.reward, is_done
         elif (action == Action.RIGHT) or (action == Action.RIGHT.value):
             if not self.player.move_right():
-                self.reward -= 10
+                self.reward -= 20
                 return self.state, self.reward, is_done
         elif (action == Action.DOWN) or (action == Action.DOWN.value):
             if not self.player.move_down():
-                self.reward -= 10
+                self.reward -= 20
                 return self.state, self.reward, is_done
         elif (action == Action.LEFT) or (action == Action.LEFT.value):
             if not self.player.move_left():
-                self.reward -= 10
+                self.reward -= 20
                 return self.state, self.reward, is_done
         # elif (action == Action.BOMB) or (action == Action.BOMB.value):
         #     self.player.use_bomb
@@ -89,22 +90,21 @@ class GameLoop:
                 current_cell.visited = True
                 self.visited_cells.append(current_cell)
         else:
-            self.reward -= 2
+            self.reward -= 1
 
         # Punishment for each step
-        # self.reward -= 0.5
+        self.reward -= 0.5
 
         # if self.player.x == self.last_visited_cell.x and self.player.y == self.last_visited_cell.y: 
         #     self.reward -= 1
 
         if self.player.touching_coin() == True:
             self.reward += 100
-        # else:
-        #     # Subtract points when agent gets further from closest coin
-        #     nearest = self.player.get_nearest_coin()
-        #     dist = math.dist([self.player.x, self.player.y], [nearest.x, nearest.y])
-        #     self.reward -= dist * 0.1
-        # print([str(c) for c in self.maze.coin_list], ", Amount: ", self.maze.coin_amount)
+        else:
+            # Subtract points when agent gets further from closest coin
+            nearest = self.player.get_nearest_coin()
+            dist = self.player.get_distance_from_coin(nearest)
+            self.reward -= dist * 0.01
 
         if self.player.all_coins_collected():
             print("All coins collected")
@@ -127,11 +127,12 @@ class GameLoop:
             self.player.x, 
             self.player.y,
             int(self.player.all_coins_collected()),
-            self.player.get_nearest_coin().x,
-            self.player.get_nearest_coin().y,
+            self.player.get_nearest_coin().x - self.player.x,
+            self.player.get_nearest_coin().y - self.player.y,
             self.player.get_nearest_coin().state.value,
-            # self.last_visited_cell.x,
-            # self.last_visited_cell.y
+            self.last_visited_cell.x,
+            self.last_visited_cell.y,
+            self.player.get_distance_from_coin(self.player.get_nearest_coin())
         ]
         fog = self.maze.generate_fog(self.player.x, self.player.y, self.fog_size)
         for cell in fog:
@@ -145,16 +146,16 @@ class GameLoop:
         for _ in range(actual_fog_size - len(fog)):
             state.extend([-1, -1, -1])
             
-        # max_visited_cells = len(self.maze.get_passages())
-        # visited_cells = self.visited_cells[:max_visited_cells]
-        # for cell in visited_cells:
-        #     state.append(cell.x - self.player.x)
-        #     state.append(cell.y - self.player.y)
-        #     state.append(cell.state.value)
+        max_visited_cells = len(self.maze.get_passages())
+        visited_cells = self.visited_cells[:max_visited_cells]
+        for cell in visited_cells:
+            state.append(cell.x - self.player.x)
+            state.append(cell.y - self.player.y)
+            state.append(cell.visited)
         
-        # # Fill the remaining slots if there are
-        # for _ in range(max_visited_cells - len(visited_cells)):
-        #     state.extend([-1, -1, -1])
+        # Fill the remaining slots if there are
+        for _ in range(max_visited_cells - len(visited_cells)):
+            state.extend([-1, -1, -1])
 
         return np.array(state)
                 

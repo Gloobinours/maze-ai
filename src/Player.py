@@ -90,6 +90,9 @@ class Player:
                 
         return closest_coin
     
+    def get_distance_from_coin(self, coin: Cell):
+        return math.dist([self.x, self.y], [coin.x, coin.y])
+    
     def all_coins_collected(self) -> bool:
         """Check if all the coins are collected by the player
 
