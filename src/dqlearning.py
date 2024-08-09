@@ -59,11 +59,10 @@ class ReplayMemory(object):
 class DeepQNetwork(nn.Module):
     def __init__(self, n_observations, n_actions):
         super(DeepQNetwork, self).__init__()
-        self.layer1 = nn.Linear(n_observations, 128)
-        self.layer2 = nn.Linear(128, 128)
-        self.layer3 = nn.Linear(128, 128)
-        self.layer4 = nn.Linear(128, 128)
-        self.layer5 = nn.Linear(128, n_actions)
+        self.layer1 = nn.Linear(n_observations, 256)
+        self.layer2 = nn.Linear(256, 256)
+        self.layer3 = nn.Linear(256, 256)
+        self.layer4 = nn.Linear(256, n_actions)
 
     def forward(self, x):
         """Called with either one element to determine next action,
@@ -78,8 +77,7 @@ class DeepQNetwork(nn.Module):
         x = F.relu(self.layer1(x))
         x = F.relu(self.layer2(x))
         x = F.relu(self.layer3(x))
-        x = F.relu(self.layer4(x))
-        return self.layer5(x)
+        return self.layer4(x)
 
 
 class DQNAgent:
@@ -89,6 +87,7 @@ class DQNAgent:
         self.eps_start = eps_start
         self.eps_end =eps_end
         self.eps_decay = eps_decay
+        self.eps_threshold = eps_start
         self.tau = tau
         self.learning_rate = learning_rate
         self.policy_net = DeepQNetwork(self.get_n_observations(), self.get_n_actions()).to(device)
@@ -137,9 +136,9 @@ class DQNAgent:
         Returns:
             torch.tensor: _description_
         """
-        self.eps_threshold = self.eps_end + (self.eps_start - self.eps_end) * \
-            math.exp(-1. * self.steps_done / self.eps_decay)
-        self.steps_done += 1
+        # self.eps_threshold = self.eps_end + (self.eps_start - self.eps_end) * \
+        #     math.exp(-1. * self.steps_done / self.eps_decay)
+        # self.steps_done += 1
         if random.random() > self.eps_threshold:
             # Select best action
             with torch.no_grad():
@@ -148,6 +147,9 @@ class DQNAgent:
             # Select random action
             return torch.tensor([[random.choice(actions).value]], device=device, dtype=torch.long)
         
+    def compute_epsilon(self):
+        self.eps_threshold = max(self.eps_end, self.eps_decay * self.eps_threshold)
+
     def optimize_model(self):
         if len(self.memory) < self.batch_size:
             return
@@ -197,17 +199,17 @@ class DQNAgent:
 
 BATCH_SIZE = 128 # the number of transitions sampled from the replay buffer
 GAMMA = 0.99 # discount factor
-EPS_START = 0.9 # the starting value of epsilon
+EPS_START = 1.0 # the starting value of epsilon
 EPS_END = 0.05 # the final value of epsilon
-EPS_DECAY = 1000 # controls the rate of exponential decay of epsilon, higher means a slower decay
+EPS_DECAY = 0.995 # controls the rate of exponential decay of epsilon, higher means a slower decay
 TAU = 0.005 # the update rate of the target network
 LR = 0.001 # the learning rate of the ``AdamW`` optimizer
 
 # Init the game - TRAINING AGENT
-seed = 1
-maze: Maze = Maze.Maze(13, 1, a_seed= seed)
+seed = None
+maze: Maze = Maze.Maze(9, 1, a_seed= seed)
 player: Player = Player(0, 0, maze)
-fog_size = 2
+fog_size = 1
 gameloop: GameLoop = GameLoop(player, maze, fog_size = fog_size)
 
 actions = [Action.UP, Action.RIGHT, Action.DOWN, Action.LEFT]
@@ -314,14 +316,16 @@ for i_episode in range(num_episodes):
         
         # Increment step count
         step_count += 1
-        print(f'# Action: {Action(action.item()).name}   ')
-        print(f'# Steps: {step_count}')
-        print(f'# Epsilon: {agent.eps_threshold}          ')
+        print(f'# Action: {Action(action.item()).name}         ')
+        print(f'# Steps: {t}           ')
+        print(f'# Epsilon: {agent.eps_threshold}               ')
         print(f'# Reward: {total_reward[0]}         ')
         print(f'# Episode: {i_episode}'               )
         # input()
 
+    agent.compute_epsilon()
 
+os.system('cls' if os.name == 'nt' else 'clear')
 print('Complete')
 plot_durations(show_result=True)
 # Show cursor again

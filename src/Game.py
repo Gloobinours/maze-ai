@@ -86,11 +86,11 @@ class GameLoop:
         # Reward points when agent visits unvisited cells
         current_cell = self.maze.grid[self.player.x][self.player.y]
         if current_cell.visited == False and current_cell.state != CellState.WALL:
-                self.reward += 30
+                self.reward += 0
                 current_cell.visited = True
                 self.visited_cells.append(current_cell)
         else:
-            self.reward -= 1
+            self.reward -= 0
 
         # Punishment for each step
         self.reward -= 0.5
@@ -99,16 +99,16 @@ class GameLoop:
         #     self.reward -= 1
 
         if self.player.touching_coin() == True:
-            self.reward += 100
+            self.reward += 500
         else:
             # Subtract points when agent gets further from closest coin
             nearest = self.player.get_nearest_coin()
             dist = self.player.get_distance_from_coin(nearest)
-            self.reward -= dist * 0.01
+            self.reward -= dist * 0
 
         if self.player.all_coins_collected():
             print("All coins collected")
-            self.reward += 300
+            self.reward += 1000
             is_done = True
 
         if is_done == False:
