@@ -149,10 +149,12 @@ class Maze:
                     possible_points.append((x,y))
 
         if len(possible_points) == 0:
-            for x in range(len(self.grid)):
-                for y in range(len(self.grid[0])):
-                    if self.grid[x][y].state == CellState.PASSAGE:
-                        return [(x,y)]
+            x = random.randrange(0, self.size)
+            y = random.randrange(0, self.size)
+            while self.grid[x][y].state == CellState.WALL:
+                x = random.randrange(0, self.size)
+                y = random.randrange(0, self.size)
+            return [(x,y)]
                     
         if len(possible_points) < self.coin_amount:
             self.coin_amount = len(possible_points)
