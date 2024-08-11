@@ -26,6 +26,7 @@ class GameLoop:
         self.visited_cells: list[Cell] = []
         self.last_visited_cell: Cell = Cell(0,0)
         self.distance_from_coin = 0
+        self.steps = 0
     
     def draw_maze(self) -> None:
         """Draws the player on the maze
@@ -55,7 +56,7 @@ class GameLoop:
         """
         # self.draw_maze()
         # print('<------------------------------------>')
-
+        self.steps += 1
         self.reward = 0
         is_done = False
 
@@ -86,7 +87,7 @@ class GameLoop:
         # Reward points when agent visits unvisited cells
         current_cell = self.maze.grid[self.player.x][self.player.y]
         if current_cell.visited == False and current_cell.state != CellState.WALL:
-                self.reward += 0
+                self.reward += 20
                 current_cell.visited = True
                 self.visited_cells.append(current_cell)
         else:
@@ -104,7 +105,7 @@ class GameLoop:
             # Subtract points when agent gets further from closest coin
             nearest = self.player.get_nearest_coin()
             dist = self.player.get_distance_from_coin(nearest)
-            self.reward -= dist * 0
+            self.reward -= dist * 0.0
 
         if self.player.all_coins_collected():
             print("All coins collected")
@@ -132,7 +133,8 @@ class GameLoop:
             self.player.get_nearest_coin().state.value,
             self.last_visited_cell.x,
             self.last_visited_cell.y,
-            self.player.get_distance_from_coin(self.player.get_nearest_coin())
+            self.player.get_distance_from_coin(self.player.get_nearest_coin()),
+            self.steps
         ]
         fog = self.maze.generate_fog(self.player.x, self.player.y, self.fog_size)
         for cell in fog:
