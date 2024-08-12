@@ -58,10 +58,10 @@ class ReplayMemory(object):
 class DeepQNetwork(nn.Module):
     def __init__(self, n_observations, n_actions):
         super(DeepQNetwork, self).__init__()
-        self.layer1 = nn.Linear(n_observations, 256)
-        self.layer2 = nn.Linear(256, 256)
-        self.layer3 = nn.Linear(256, 256)
-        self.layer4 = nn.Linear(256, n_actions)
+        self.layer1 = nn.Linear(n_observations, 512)
+        self.layer2 = nn.Linear(512, 512)
+        self.layer3 = nn.Linear(512, 512)
+        self.layer4 = nn.Linear(512, n_actions)
 
     def forward(self, x):
         """
@@ -160,6 +160,7 @@ class DQNAgent:
         # self.eps_threshold = self.eps_end + (self.eps_start - self.eps_end) * \
         #     math.exp(-1. * self.steps_done / self.eps_decay)
         # self.steps_done += 1
+        self.compute_epsilon()
         if random.random() > self.eps_threshold:
             # Select best action (largest q-value)
             with torch.no_grad():
@@ -264,12 +265,12 @@ def main():
     GAMMA = 0.99 # discount factor
     EPS_START = 1.0 # the starting value of epsilon
     EPS_END = 0.05 # the final value of epsilon
-    EPS_DECAY = 0.9995 # controls the rate of exponential decay of epsilon, higher means a slower decay
+    EPS_DECAY = 0.999 # controls the rate of exponential decay of epsilon, higher means a slower decay
     TAU = 0.005 # the update rate of the target network
     LR = 0.001 # the learning rate of the ``AdamW`` optimizer
 
     # Init the game - TRAINING AGENT
-    seed = 2
+    seed = None
     maze: Maze = Maze.Maze(9, 1, a_seed= seed)
     player: Player = Player(0, 0, maze)
     fog_size = 1
@@ -279,11 +280,10 @@ def main():
 
     agent = DQNAgent(BATCH_SIZE, GAMMA, EPS_START, EPS_END, EPS_DECAY, TAU, LR, gameloop)
 
-    
     episode_durations = []
 
     if torch.cuda.is_available() or torch.backends.mps.is_available():
-        num_episodes = 150
+        num_episodes = 10000
     else:
         num_episodes = 100
 
@@ -305,13 +305,15 @@ def main():
         t = 0
         # Agent naviguates the maze until truncated or terminated
         while not terminated:
+            if truncated: break
+            if t == 2000: break
 
             # print(" Step: ", step_count)
             # Select action using Epsilon-Greedy Algorithm
             action = agent.select_action(state, actions)
 
             # Execute action
-            observation, reward, terminated = gameloop.step(action.item())
+            observation, reward, terminated, truncated = gameloop.step(action.item())
             reward = torch.tensor([reward], device=device)
             done = terminated
 
@@ -352,9 +354,7 @@ def main():
             print(f'# Epsilon: {agent.eps_threshold}               ')
             print(f'# Reward: {total_reward[0]}         ')
             print(f'# Episode: {i_episode}'               )
-            # input()
-
-        agent.compute_epsilon()
+            input()
 
     os.system('cls' if os.name == 'nt' else 'clear')
     print('Complete')
