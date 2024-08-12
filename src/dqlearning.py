@@ -277,7 +277,6 @@ def main():
     EPS_START = 1.0 # the starting value of epsilon
     EPS_END = 0.05 # the final value of epsilon
     EPS_DECAY = 0.9999 # controls the rate of exponential decay of epsilon, higher means a slower decay
-    EPS_DECAY = 0.9999 # controls the rate of exponential decay of epsilon, higher means a slower decay
     TAU = 0.005 # the update rate of the target network
     LR = 0.001 # the learning rate of the ``AdamW`` optimizer
 
@@ -295,7 +294,6 @@ def main():
     episode_durations = []
 
     if torch.cuda.is_available() or torch.backends.mps.is_available():
-        num_episodes = 200
         num_episodes = 200
     else:
         num_episodes = 200
