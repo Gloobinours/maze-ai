@@ -50,7 +50,8 @@ class ReplayMemory(object):
         Returns:
             list: Randomly selected transitions
         """
-        return random.sample(self.memory, batch_size)
+        rand = random.Random()
+        return rand.sample(self.memory, batch_size)
 
     def __len__(self):
         return len(self.memory)
@@ -160,14 +161,16 @@ class DQNAgent:
         # self.eps_threshold = self.eps_end + (self.eps_start - self.eps_end) * \
         #     math.exp(-1. * self.steps_done / self.eps_decay)
         # self.steps_done += 1
+        rand = random.Random()
         self.compute_epsilon()
-        if random.random() > self.eps_threshold:
+        if rand.random() > self.eps_threshold:
             # Select best action (largest q-value)
             with torch.no_grad():
                 return self.policy_net(state).max(1).indices.view(1, 1)
         else:
             # Select random action
-            return torch.tensor([[random.choice(actions).value]], device=device, dtype=torch.long)
+            rand2 = random.random()
+            return torch.tensor([[rand2.choice(actions).value]], device=device, dtype=torch.long)
         
     def compute_epsilon(self):
         self.eps_threshold = max(self.eps_end, self.eps_decay * self.eps_threshold)
@@ -265,7 +268,7 @@ def main():
     GAMMA = 0.99 # discount factor
     EPS_START = 1.0 # the starting value of epsilon
     EPS_END = 0.05 # the final value of epsilon
-    EPS_DECAY = 0.999 # controls the rate of exponential decay of epsilon, higher means a slower decay
+    EPS_DECAY = 0.99999 # controls the rate of exponential decay of epsilon, higher means a slower decay
     TAU = 0.005 # the update rate of the target network
     LR = 0.001 # the learning rate of the ``AdamW`` optimizer
 
@@ -283,7 +286,7 @@ def main():
     episode_durations = []
 
     if torch.cuda.is_available() or torch.backends.mps.is_available():
-        num_episodes = 10000
+        num_episodes = 100000
     else:
         num_episodes = 100
 
@@ -305,7 +308,7 @@ def main():
         t = 0
         # Agent naviguates the maze until truncated or terminated
         while not terminated:
-            if truncated: break
+            # if truncated: break
             if t == 2000: break
 
             # print(" Step: ", step_count)
@@ -316,12 +319,6 @@ def main():
             observation, reward, terminated, truncated = gameloop.step(action.item())
             reward = torch.tensor([reward], device=device)
             done = terminated
-
-            # Clear the console
-            print("\033[H", end='\n')
-            print('<------------------------------------>')
-            gameloop.draw_maze()
-            print('<------------------------------------>')
 
             if terminated:
                 next_state = None
@@ -349,12 +346,18 @@ def main():
             
             # Increment step count
             step_count += 1
+
+            # Clear the console
+            print("\033[H", end='\n')
+            print('<------------------------------------>')
+            gameloop.draw_maze()
+            print('<------------------------------------>')
             print(f'# Action: {Action(action.item()).name}         ')
             print(f'# Steps: {t}           ')
             print(f'# Epsilon: {agent.eps_threshold}               ')
             print(f'# Reward: {total_reward[0]}         ')
             print(f'# Episode: {i_episode}'               )
-            input()
+            # input()
 
     os.system('cls' if os.name == 'nt' else 'clear')
     print('Complete')
