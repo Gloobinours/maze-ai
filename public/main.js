@@ -1,4 +1,4 @@
-let maze_size = 61;
+let maze_size = 9;
 // Function to fetch maze data from the server
 function get_maze(size) {
     return fetch(`http://127.0.0.1:5000/maze/${size}`)

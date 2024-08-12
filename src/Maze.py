@@ -22,6 +22,7 @@ class Cell:
         self.x: int = x
         self.y: int = y
         self.state: CellState = CellState.WALL
+        self.visited = False
 
     def __eq__(self, other) -> bool:
         return self.x == other.x and self.y == other.y
@@ -30,7 +31,7 @@ class Cell:
 
 
 class Maze:
-    def __init__(self, size: int, coin_amount : int) -> None:
+    def __init__(self, size: int, coin_amount : int, a_seed : int = None) -> None:
         """Constructor for Maze
 
         Args:
@@ -38,12 +39,13 @@ class Maze:
             coin_amount (int): The number of coins to place in the maze
         """
         self.size: int = size
+        if a_seed: random.seed(a_seed)
         self.grid = [[Cell(x, y) for y in range(size)] for x in range(size)]
         self.generate_grid()
 
         self.coin_amount: int = coin_amount
         self.coin_list = []
-        self.add_coin_to_maze()
+        self.add_coins_to_maze()
 
     def get_neighbors(self, cell: Cell, matrix) -> None:
         """Get neighboring cells, 2 cells away from passed in cell
@@ -65,6 +67,15 @@ class Maze:
                 neighbors.append(matrix[new_row][new_col])
 
         return neighbors
+    
+    def get_passages(self) -> list[Cell]:
+        passages = []
+        for x in range(len(self.grid)):
+            for y in range(len(self.grid[0])):
+                if (self.grid[x][y].state == CellState.PASSAGE):
+                    passages.append(self.grid[x][y])
+
+        return passages
 
     def generate_grid(self) -> list:
         """Generate the maze grid using DFS
@@ -137,12 +148,21 @@ class Maze:
                 if (self.check_adjacent(x, y) and self.grid[x][y].state == CellState.PASSAGE):
                     possible_points.append((x,y))
 
+        if len(possible_points) == 0:
+            x = random.randrange(0, self.size)
+            y = random.randrange(0, self.size)
+            while self.grid[x][y].state == CellState.WALL:
+                x = random.randrange(0, self.size)
+                y = random.randrange(0, self.size)
+            return [(x,y)]
+                    
         if len(possible_points) < self.coin_amount:
             self.coin_amount = len(possible_points)
+
         return random.sample(possible_points, self.coin_amount)
     
-    def add_coin_to_maze(self) -> None:
-        """Append coin to matrix
+    def add_coins_to_maze(self) -> None:
+        """Append coins to matrix
         """
         coin_pos = self.generate_coins()
         for x in range(len(self.grid)):
@@ -179,8 +199,9 @@ class Maze:
         res = []
         for i in range(x - size, x + size + 1):
             for j in range(y - size, y + size + 1):
-                if (i >= 0 and j >= 0) and (i <= self.size and j <= self.size):
+                if (i >= 0 and j >= 0) and (i < self.size and j < self.size):
                     res.append(self.grid[i][j])
+
         return res
 
     def delete_coin(self, x, y) -> None:

@@ -27,39 +27,95 @@ class Player:
                 True if the cell is walkable (passage or coin)
         """
         if (y < 0 or y >= self.maze.size): 
-            print(f"Out of bounds: ({x}, {y})")
+            # print(f"Out of bounds: ({x}, {y})          ")
             return False
         if (x < 0 or x >= self.maze.size): 
-            print(f"Out of bounds: ({x}, {y})")
+            # print(f"Out of bounds: ({x}, {y})           ")
             return False
         
         if self.maze.grid[x][y].state == CellState.WALL:
-            print(f"Wall at: ({x}, {y})")
+            # print(f"Wall at: ({x}, {y})                   ")
             return False
         
         # The cell is walkable
         return True
 
-    def move_left(self) -> None:
+    def move_left(self) -> bool:
         """Move player left
         """
         if (self.is_walkable(self.x, self.y-1)):
             self.y -= 1
-    def move_right(self) -> None:
+            return True
+        else:
+            return False
+    def move_right(self) -> bool:
         """Move player right
         """
         if (self.is_walkable(self.x, self.y+1)):
             self.y += 1
-    def move_up(self) -> None:
+            return True
+        else:
+            return False
+    def move_up(self) -> bool:
         """Move player up
         """
         if (self.is_walkable(self.x-1, self.y)):
             self.x -= 1
-    def move_down(self) -> None:
+            return True
+        else:
+            return False
+    def move_down(self) -> bool:
         """Move player down
         """
         if (self.is_walkable(self.x+1, self.y)):
             self.x += 1
+            return True
+        else:
+            return False
+        
+    def calculate_ray(self, rays, x, y) -> None:
+        """Helper function to calcualate data for a single ray
+
+        Args:
+            rays (dict): dictionary containing lists of ray data to append
+            x (int): vertical step value (-1, 0, 1)
+            y (int): horizontal step value (-1, 0, 1)
+        """
+        length = 0
+        unvisited = 0
+        coin = False
+        while (self.is_walkable(self.x + x, self.y + y) == True):
+            length += 1
+            if self.maze.grid[self.x + x][self.y + y].state == CellState.COIN:
+                coin = True
+                break
+            if self.maze.grid[self.x + x][self.y + y].visited == False:
+                unvisited += 1
+            x += x
+            y += y
+        rays['lengths'].append(length)
+        rays['univisted_cnt'].append(unvisited)
+        rays['touches_coin'].append(coin)
+        
+    def get_rays(self) -> dict:
+        """Calculates the ray data for each cardinal direction
+
+        Returns:
+            dict:
+                'lengths' = list of ray lengths\n
+                'unvisited_cnt' = list of number of unvisited cells the ray touches\n
+                'touches_coin' = list of boolean values, true if the ray touches a coin
+        """
+        rays = dict()
+        rays['lengths'] = [] # list of ray lengths
+        rays['univisted_cnt'] = [] # list of number of unvisited cells the ray touches
+        rays['touches_coin'] = [] # list of boolean values, true if the ray touches a coin
+        for x in [-1, 1]:
+            self.calculate_ray(rays, x, 0)
+        for y in [-1, 1]:
+            self.calculate_ray(rays, 0, y)
+        return rays
+
 
     def get_nearest_coin(self) -> Cell:
         """Get the position of the closest coin from player
@@ -67,18 +123,19 @@ class Player:
         Returns:
             Cell: closest coin from player
         """
-        closest_dist = -1
+        closest_dist = float('inf')
         closest_coin = None
+
         for coin in self.maze.coin_list:
             dist = math.dist([self.x, self.y], [coin.x, coin.y])
-            if (closest_dist == 1):
-                closest_dist = dist
-                closest_coin = coin
-                continue
             if (dist < closest_dist):
                 closest_dist = dist
                 closest_coin = coin
+                
         return closest_coin
+    
+    def get_distance_from_coin(self, coin: Cell):
+        return math.dist([self.x, self.y], [coin.x, coin.y])
     
     def all_coins_collected(self) -> bool:
         """Check if all the coins are collected by the player
@@ -88,11 +145,12 @@ class Player:
         """
         return len(self.maze.coin_list) == 0
     
-    def touching_coin(self) -> None:
+    def touching_coin(self) -> bool:
         """Delete a coin when the player touches it
         """
         if self.maze.grid[self.x][self.y].state == CellState.COIN:
             self.maze.delete_coin(self.x, self.y)
+            return True
     
     def use_bomb(self):
         """Use bomb to break walls

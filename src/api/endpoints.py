@@ -8,7 +8,7 @@ from Maze import Maze
 class MazeEndpoint(Resource):
 
     def get(self, maze_size):
-        maze: Maze = Maze(maze_size, 3, 3)
+        maze: Maze = Maze(maze_size, 1, a_seed= 2)
         mtx = []
         for x in range(maze_size):
             mtx.append([])
