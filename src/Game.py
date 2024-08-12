@@ -64,22 +64,22 @@ class GameLoop:
         # print("Action: ", action, ", ", Action(action).name)
         if (action == Action.UP) or (action == Action.UP.value):
             if not self.player.move_up():
-                self.reward -= 10
+                self.reward -= 20
                 self.truncated = True
                 return self.state, self.reward, is_done, self.truncated
         elif (action == Action.RIGHT) or (action == Action.RIGHT.value):
             if not self.player.move_right():
-                self.reward -= 10
+                self.reward -= 20
                 self.truncated = True
                 return self.state, self.reward, is_done, self.truncated
         elif (action == Action.DOWN) or (action == Action.DOWN.value):
             if not self.player.move_down():
-                self.reward -= 10
+                self.reward -= 20
                 self.truncated = True
                 return self.state, self.reward, is_done, self.truncated
         elif (action == Action.LEFT) or (action == Action.LEFT.value):
             if not self.player.move_left():
-                self.reward -= 10
+                self.reward -= 20
                 self.truncated = True
                 return self.state, self.reward, is_done, self.truncated
         # elif (action == Action.BOMB) or (action == Action.BOMB.value):
