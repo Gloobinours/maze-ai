@@ -98,7 +98,7 @@ class DQNAgent:
         self.optimizer = optim.AdamW(self.policy_net.parameters(), lr=self.learning_rate, amsgrad=True)
         self.memory = ReplayMemory(100000)
         self.steps_done = 0
-        if filename: 
+        if filename:
             self.filename = filename
             self.load()
 
@@ -169,8 +169,7 @@ class DQNAgent:
                 return self.policy_net(state).max(1).indices.view(1, 1)
         else:
             # Select random action
-            rand2 = random.random()
-            return torch.tensor([[rand2.choice(actions).value]], device=device, dtype=torch.long)
+            return torch.tensor([[random.choice(actions).value]], device=device, dtype=torch.long)
         
     def compute_epsilon(self):
         self.eps_threshold = max(self.eps_end, self.eps_decay * self.eps_threshold)
@@ -273,7 +272,7 @@ def main():
     LR = 0.001 # the learning rate of the ``AdamW`` optimizer
 
     # Init the game - TRAINING AGENT
-    seed = None
+    seed = 156
     maze: Maze = Maze.Maze(9, 1, a_seed= seed)
     player: Player = Player(0, 0, maze)
     fog_size = 1
@@ -281,12 +280,12 @@ def main():
 
     actions = [Action.UP, Action.RIGHT, Action.DOWN, Action.LEFT]
 
-    agent = DQNAgent(BATCH_SIZE, GAMMA, EPS_START, EPS_END, EPS_DECAY, TAU, LR, gameloop)
+    agent = DQNAgent(BATCH_SIZE, GAMMA, EPS_START, EPS_END, EPS_DECAY, TAU, LR, gameloop, filename='2024-08-12_01-17-55')
 
     episode_durations = []
 
     if torch.cuda.is_available() or torch.backends.mps.is_available():
-        num_episodes = 100000
+        num_episodes = 100_000
     else:
         num_episodes = 100
 
@@ -308,7 +307,9 @@ def main():
         t = 0
         # Agent naviguates the maze until truncated or terminated
         while not terminated:
-            # if truncated: break
+            if truncated: 
+                truncated = False
+                break
             if t == 2000: break
 
             # print(" Step: ", step_count)
@@ -364,9 +365,9 @@ def main():
     plot_durations(episode_durations, show_result=True)
     # Show cursor again
     sys.stdout.write("\033[?25h")
-    sys.stdout.flush()
     if input('Save Agent?(y/N) $>').upper() == 'Y':
         agent.save()
+    sys.stdout.flush()
     plt.ioff()
     plt.show()
 
