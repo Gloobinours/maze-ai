@@ -59,10 +59,11 @@ class ReplayMemory(object):
 class DeepQNetwork(nn.Module):
     def __init__(self, n_observations, n_actions):
         super(DeepQNetwork, self).__init__()
-        self.layer1 = nn.Linear(n_observations, 512)
-        self.layer2 = nn.Linear(512, 512)
-        self.layer3 = nn.Linear(512, 512)
-        self.layer4 = nn.Linear(512, n_actions)
+        self.layer1 = nn.Linear(n_observations, 4096)
+        self.layer2 = nn.Linear(4096, 4096)
+        self.layer3 = nn.Linear(4096, 4096)
+        self.layer4 = nn.Linear(4096, 4096)
+        self.layer5 = nn.Linear(4096, n_actions)
 
     def forward(self, x):
         """
@@ -78,7 +79,8 @@ class DeepQNetwork(nn.Module):
         x = F.relu(self.layer1(x))
         x = F.relu(self.layer2(x))
         x = F.relu(self.layer3(x))
-        return self.layer4(x)
+        x = F.relu(self.layer4(x))
+        return self.layer5(x)
 
 
 class DQNAgent:
@@ -169,8 +171,7 @@ class DQNAgent:
                 return self.policy_net(state).max(1).indices.view(1, 1)
         else:
             # Select random action
-            rand2 = random.random()
-            return torch.tensor([[rand2.choice(actions).value]], device=device, dtype=torch.long)
+            return torch.tensor([[random.choice(actions).value]], device=device, dtype=torch.long)
         
     def compute_epsilon(self):
         self.eps_threshold = max(self.eps_end, self.eps_decay * self.eps_threshold)
@@ -268,12 +269,12 @@ def main():
     GAMMA = 0.99 # discount factor
     EPS_START = 1.0 # the starting value of epsilon
     EPS_END = 0.05 # the final value of epsilon
-    EPS_DECAY = 0.99999 # controls the rate of exponential decay of epsilon, higher means a slower decay
+    EPS_DECAY = 0.9995 # controls the rate of exponential decay of epsilon, higher means a slower decay
     TAU = 0.005 # the update rate of the target network
     LR = 0.001 # the learning rate of the ``AdamW`` optimizer
 
     # Init the game - TRAINING AGENT
-    seed = None
+    seed = 1
     maze: Maze = Maze.Maze(9, 1, a_seed= seed)
     player: Player = Player(0, 0, maze)
     fog_size = 1
@@ -286,9 +287,9 @@ def main():
     episode_durations = []
 
     if torch.cuda.is_available() or torch.backends.mps.is_available():
-        num_episodes = 100000
+        num_episodes = 200
     else:
-        num_episodes = 100
+        num_episodes = 200
 
     step_count = 0
 
