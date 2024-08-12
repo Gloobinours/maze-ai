@@ -59,11 +59,11 @@ class ReplayMemory(object):
 class DeepQNetwork(nn.Module):
     def __init__(self, n_observations, n_actions):
         super(DeepQNetwork, self).__init__()
-        self.layer1 = nn.Linear(n_observations, 512)
-        self.layer2 = nn.Linear(512, 512)
-        self.layer3 = nn.Linear(512, 512)
-        self.layer4 = nn.Linear(512, 4)
-        self.layer5 = nn.Linear(4, n_actions)
+        self.layer1 = nn.Linear(n_observations, 4096)
+        self.layer2 = nn.Linear(4096, 4096)
+        self.layer3 = nn.Linear(4096, 4096)
+        self.layer4 = nn.Linear(4096, 4096)
+        self.layer5 = nn.Linear(4096, n_actions)
 
     def forward(self, x):
         """
@@ -101,6 +101,7 @@ class DQNAgent:
         self.memory = ReplayMemory(100000)
         self.steps_done = 0
         self.enable_ddqn = enable_ddqn
+        self.scaler = torch.GradScaler()
         if filename:
             self.filename = filename
             self.load()
@@ -223,14 +224,17 @@ class DQNAgent:
 
         # Compute Huber loss
         criterion = nn.SmoothL1Loss().cuda()
-        loss = criterion(state_action_values, expected_state_action_values.unsqueeze(1))
+        with torch.amp.autocast(device_type=device.type):
+            loss = criterion(state_action_values, expected_state_action_values.unsqueeze(1))
 
         # Optimize the model
         self.optimizer.zero_grad()
-        loss.backward()
+        self.scaler.scale(loss).backward()
         # In-place gradient clipping
+        self.scaler.unscale_(self.optimizer)
         torch.nn.utils.clip_grad_value_(self.policy_net.parameters(), 100)
-        self.optimizer.step()
+        self.scaler.step(self.optimizer)
+        self.scaler.update()
     
 def plot_durations(episode_durations, show_result=False):
     """
@@ -274,15 +278,15 @@ def main():
     GAMMA = 0.99 # discount factor
     EPS_START = 1.0 # the starting value of epsilon
     EPS_END = 0.05 # the final value of epsilon
-    EPS_DECAY = 0.99999 # controls the rate of exponential decay of epsilon, higher means a slower decay
+    EPS_DECAY = 0.9999 # controls the rate of exponential decay of epsilon, higher means a slower decay
     TAU = 0.005 # the update rate of the target network
     LR = 0.001 # the learning rate of the ``AdamW`` optimizer
 
     # Init the game - TRAINING AGENT
-    seed = 1
+    seed = 416
     maze: Maze = Maze.Maze(9, 1, a_seed= seed)
     player: Player = Player(0, 0, maze)
-    fog_size = 2
+    fog_size = 1
     gameloop: GameLoop = GameLoop(player, maze, fog_size = fog_size)
 
     actions = [Action.UP, Action.RIGHT, Action.DOWN, Action.LEFT]
@@ -292,7 +296,7 @@ def main():
     episode_durations = []
 
     if torch.cuda.is_available() or torch.backends.mps.is_available():
-        num_episodes = 100_000
+        num_episodes = 200
     else:
         num_episodes = 200
 
