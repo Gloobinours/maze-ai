@@ -27,14 +27,14 @@ class Player:
                 True if the cell is walkable (passage or coin)
         """
         if (y < 0 or y >= self.maze.size): 
-            print(f"Out of bounds: ({x}, {y})          ")
+            # print(f"Out of bounds: ({x}, {y})          ")
             return False
         if (x < 0 or x >= self.maze.size): 
-            print(f"Out of bounds: ({x}, {y})           ")
+            # print(f"Out of bounds: ({x}, {y})           ")
             return False
         
         if self.maze.grid[x][y].state == CellState.WALL:
-            print(f"Wall at: ({x}, {y})                   ")
+            # print(f"Wall at: ({x}, {y})                   ")
             return False
         
         # The cell is walkable
@@ -72,6 +72,50 @@ class Player:
             return True
         else:
             return False
+        
+    def calculate_ray(self, rays, x, y) -> None:
+        """Helper function to calcualate data for a single ray
+
+        Args:
+            rays (dict): dictionary containing lists of ray data to append
+            x (int): vertical step value (-1, 0, 1)
+            y (int): horizontal step value (-1, 0, 1)
+        """
+        length = 0
+        unvisited = 0
+        coin = False
+        while (self.is_walkable(self.x + x, self.y + y) == True):
+            length += 1
+            if self.maze.grid[self.x + x][self.y + y].state == CellState.COIN:
+                coin = True
+                break
+            if self.maze.grid[self.x + x][self.y + y].visited == False:
+                unvisited += 1
+            x += x
+            y += y
+        rays['lengths'].append(length)
+        rays['univisted_cnt'].append(unvisited)
+        rays['touches_coin'].append(coin)
+        
+    def get_rays(self) -> dict:
+        """Calculates the ray data for each cardinal direction
+
+        Returns:
+            dict:
+                'lengths' = list of ray lengths\n
+                'unvisited_cnt' = list of number of unvisited cells the ray touches\n
+                'touches_coin' = list of boolean values, true if the ray touches a coin
+        """
+        rays = dict()
+        rays['lengths'] = [] # list of ray lengths
+        rays['univisted_cnt'] = [] # list of number of unvisited cells the ray touches
+        rays['touches_coin'] = [] # list of boolean values, true if the ray touches a coin
+        for x in [-1, 1]:
+            self.calculate_ray(rays, x, 0)
+        for y in [-1, 1]:
+            self.calculate_ray(rays, 0, y)
+        return rays
+
 
     def get_nearest_coin(self) -> Cell:
         """Get the position of the closest coin from player

@@ -129,7 +129,7 @@ class GameLoop:
         """
         state = [
             self.player.x,
-            self.player.y
+            self.player.y,
             # self.player.get_nearest_coin().x - self.player.x,
             # self.player.get_nearest_coin().y - self.player.y,
             # self.player.get_nearest_coin().state.value,
@@ -138,28 +138,13 @@ class GameLoop:
             # self.player.get_distance_from_coin(self.player.get_nearest_coin()),
             # self.steps
         ]
-        fog = self.maze.generate_fog(self.player.x, self.player.y, self.fog_size)
-        for cell in fog:
-            state.append(cell.x - self.player.x)
-            state.append(cell.y - self.player.y)
-            state.append(cell.state.value)
-            state.append(int(cell.visited))
-
-        # Fill the remaining slots if there are
-        actual_fog_size = 9 if self.fog_size == 1 else (self.fog_size*2+1)**2
-        for _ in range(actual_fog_size - len(fog)):
-            state.extend([-1, -1, -1, -1])
-            
-        # max_visited_cells = len(self.maze.get_passages())
-        # visited_cells = self.visited_cells[:max_visited_cells]
-        # for cell in visited_cells:
-        #     state.append(cell.x - self.player.x)
-        #     state.append(cell.y - self.player.y)
-        #     state.append(cell.visited)
-        
-        # # Fill the remaining slots if there are
-        # for _ in range(max_visited_cells - len(visited_cells)):
-        #     state.extend([-1, -1, -1])
+        rays = self.player.get_rays()
+        for length in rays['lengths']:
+            state.append(length)
+        # for count in rays['univisted_cnt']:
+        #     state.append(count)
+        for coin in rays['touches_coin']:
+            state.append(coin)
 
         return np.array(state)
                 
