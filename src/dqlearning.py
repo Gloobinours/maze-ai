@@ -59,11 +59,11 @@ class ReplayMemory(object):
 class DeepQNetwork(nn.Module):
     def __init__(self, n_observations, n_actions):
         super(DeepQNetwork, self).__init__()
-        self.layer1 = nn.Linear(n_observations, 4096)
-        self.layer2 = nn.Linear(4096, 4096)
-        self.layer3 = nn.Linear(4096, 4096)
-        self.layer4 = nn.Linear(4096, 4096)
-        self.layer5 = nn.Linear(4096, n_actions)
+        self.layer1 = nn.Linear(n_observations, 512)
+        self.layer2 = nn.Linear(512, 512)
+        self.layer3 = nn.Linear(512, 512)
+        self.layer4 = nn.Linear(512, 4)
+        self.layer5 = nn.Linear(4, n_actions)
 
     def forward(self, x):
         """
@@ -84,7 +84,7 @@ class DeepQNetwork(nn.Module):
 
 
 class DQNAgent:
-    def __init__(self, batch_size, gamma, eps_start, eps_end, eps_decay, tau, learning_rate, gameloop, filename=None) -> None:
+    def __init__(self, batch_size, gamma, eps_start, eps_end, eps_decay, tau, learning_rate, gameloop, enable_ddqn, filename=None) -> None:
         self.gameloop = gameloop
         self.batch_size = batch_size
         self.gamma = gamma
@@ -100,6 +100,7 @@ class DQNAgent:
         self.optimizer = optim.AdamW(self.policy_net.parameters(), lr=self.learning_rate, amsgrad=True)
         self.memory = ReplayMemory(100000)
         self.steps_done = 0
+        self.enable_ddqn = enable_ddqn
         if filename:
             self.filename = filename
             self.load()
@@ -160,9 +161,6 @@ class DQNAgent:
         Returns:
             torch.tensor: Either the best action calculated with q-values or random action
         """
-        # self.eps_threshold = self.eps_end + (self.eps_start - self.eps_end) * \
-        #     math.exp(-1. * self.steps_done / self.eps_decay)
-        # self.steps_done += 1
         rand = random.Random()
         self.compute_epsilon()
         if rand.random() > self.eps_threshold:
@@ -212,12 +210,19 @@ class DQNAgent:
         # state value or 0 in case the state was final.
         next_state_values = torch.zeros(self.batch_size, device=device)
         with torch.no_grad():
-            next_state_values[non_final_mask] = self.target_net(non_final_next_states).max(1).values
+            if self.enable_ddqn:
+                # Double DQN: Use policy net to select the best action
+                next_sate_actions = self.policy_net(non_final_next_states).max(1).indices
+                next_state_values[non_final_mask] = self.target_net(non_final_next_states) \
+                                                    .gather(1, next_sate_actions.unsqueeze(1)).squeeze(1)
+            else:
+                # Standard DQN: Use target net to select the best action
+                next_state_values[non_final_mask] = self.target_net(non_final_next_states).max(1).values
         # Compute the expected Q values
         expected_state_action_values = (next_state_values * self.gamma) + reward_batch
 
         # Compute Huber loss
-        criterion = nn.SmoothL1Loss()
+        criterion = nn.SmoothL1Loss().cuda()
         loss = criterion(state_action_values, expected_state_action_values.unsqueeze(1))
 
         # Optimize the model
@@ -269,7 +274,7 @@ def main():
     GAMMA = 0.99 # discount factor
     EPS_START = 1.0 # the starting value of epsilon
     EPS_END = 0.05 # the final value of epsilon
-    EPS_DECAY = 0.9995 # controls the rate of exponential decay of epsilon, higher means a slower decay
+    EPS_DECAY = 0.99999 # controls the rate of exponential decay of epsilon, higher means a slower decay
     TAU = 0.005 # the update rate of the target network
     LR = 0.001 # the learning rate of the ``AdamW`` optimizer
 
@@ -277,17 +282,17 @@ def main():
     seed = 1
     maze: Maze = Maze.Maze(9, 1, a_seed= seed)
     player: Player = Player(0, 0, maze)
-    fog_size = 1
+    fog_size = 2
     gameloop: GameLoop = GameLoop(player, maze, fog_size = fog_size)
 
     actions = [Action.UP, Action.RIGHT, Action.DOWN, Action.LEFT]
 
-    agent = DQNAgent(BATCH_SIZE, GAMMA, EPS_START, EPS_END, EPS_DECAY, TAU, LR, gameloop, filename='2024-08-12_01-17-55')
+    agent = DQNAgent(BATCH_SIZE, GAMMA, EPS_START, EPS_END, EPS_DECAY, TAU, LR, gameloop, True, filename=None)
 
     episode_durations = []
 
     if torch.cuda.is_available() or torch.backends.mps.is_available():
-        num_episodes = 200
+        num_episodes = 100_000
     else:
         num_episodes = 200
 
@@ -309,9 +314,9 @@ def main():
         t = 0
         # Agent naviguates the maze until truncated or terminated
         while not terminated:
-            if truncated: 
-                truncated = False
-                break
+            # if truncated: 
+            #     truncated = False
+            #     break
             if t == 2000: break
 
             # print(" Step: ", step_count)
