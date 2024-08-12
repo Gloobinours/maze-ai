@@ -269,7 +269,7 @@ def main():
     GAMMA = 0.99 # discount factor
     EPS_START = 1.0 # the starting value of epsilon
     EPS_END = 0.05 # the final value of epsilon
-    EPS_DECAY = 0.9995 # controls the rate of exponential decay of epsilon, higher means a slower decay
+    EPS_DECAY = 0.9999 # controls the rate of exponential decay of epsilon, higher means a slower decay
     TAU = 0.005 # the update rate of the target network
     LR = 0.001 # the learning rate of the ``AdamW`` optimizer
 
@@ -282,12 +282,12 @@ def main():
 
     actions = [Action.UP, Action.RIGHT, Action.DOWN, Action.LEFT]
 
-    agent = DQNAgent(BATCH_SIZE, GAMMA, EPS_START, EPS_END, EPS_DECAY, TAU, LR, gameloop, filename='2024-08-12_01-17-55')
+    agent = DQNAgent(BATCH_SIZE, GAMMA, EPS_START, EPS_END, EPS_DECAY, TAU, LR, gameloop)
 
     episode_durations = []
 
     if torch.cuda.is_available() or torch.backends.mps.is_available():
-        num_episodes = 200
+        num_episodes = 1000
     else:
         num_episodes = 200
 
@@ -309,9 +309,9 @@ def main():
         t = 0
         # Agent naviguates the maze until truncated or terminated
         while not terminated:
-            if truncated: 
-                truncated = False
-                break
+            # if truncated: 
+            #     truncated = False
+            #     break
             if t == 2000: break
 
             # print(" Step: ", step_count)
