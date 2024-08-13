@@ -161,7 +161,7 @@ class DQNAgent:
             torch.tensor: Either the best action calculated with q-values or random action
         """
         rand = random.Random()
-        self.compute_epsilon()
+        # self.compute_epsilon()
         if rand.random() > self.eps_threshold:
             # Select best action (largest q-value)
             with torch.no_grad():
@@ -272,17 +272,18 @@ def main():
     """
     Main function to train the DQN agent in the maze environment.
     """
-    BATCH_SIZE = 128 # the number of transitions sampled from the replay buffer
+    BATCH_SIZE = 256 # the number of transitions sampled from the replay buffer
     GAMMA = 0.99 # discount factor
     EPS_START = 1.0 # the starting value of epsilon
     EPS_END = 0.05 # the final value of epsilon
-    EPS_DECAY = 0.9999 # controls the rate of exponential decay of epsilon, higher means a slower decay
+    EPS_DECAY = 0.995 # controls the rate of exponential decay of epsilon, higher means a slower decay
     TAU = 0.005 # the update rate of the target network
     LR = 0.001 # the learning rate of the ``AdamW`` optimizer
 
     # Init the game - TRAINING AGENT
-    seed = 416
-    maze: Maze = Maze.Maze(9, 1, a_seed= seed)
+    seed = 1
+    mazesize = 13
+    maze: Maze = Maze.Maze(mazesize, 1, a_seed= seed)
     player: Player = Player(0, 0, maze)
     fog_size = 1
     gameloop: GameLoop = GameLoop(player, maze, fog_size = fog_size)
@@ -307,6 +308,8 @@ def main():
     os.system('cls' if os.name == 'nt' else 'clear')
     for i_episode in range(num_episodes):
         # Initialize the environment and get its state
+        if i_episode%50 == 0:
+            seed += 1
         state = gameloop.reset(seed)
         state = torch.tensor(state, dtype=torch.float32, device=device).unsqueeze(0)
         truncated = False # True when agent takes more than n actions
@@ -316,10 +319,7 @@ def main():
         t = 0
         # Agent naviguates the maze until truncated or terminated
         while not terminated:
-            # if truncated: 
-            #     truncated = False
-            #     break
-            if t == 2000: break
+            # if t == 20000: break
 
             # print(" Step: ", step_count)
             # Select action using Epsilon-Greedy Algorithm
@@ -368,6 +368,7 @@ def main():
             print(f'# Reward: {total_reward[0]}         ')
             print(f'# Episode: {i_episode}'               )
             # input()
+        agent.compute_epsilon()
 
     os.system('cls' if os.name == 'nt' else 'clear')
     print('Complete')

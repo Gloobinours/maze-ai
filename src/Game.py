@@ -128,8 +128,8 @@ class GameLoop:
             np.array: state
         """
         state = [
-            self.player.x,
-            self.player.y,
+            # self.player.x, #
+            # self.player.y, #
             # self.player.get_nearest_coin().x - self.player.x,
             # self.player.get_nearest_coin().y - self.player.y,
             # self.player.get_nearest_coin().state.value,
